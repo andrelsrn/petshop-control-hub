@@ -134,3 +134,18 @@ def get_low_stock_items(db: Session = Depends(get_db)):
     low_stock_items = db.query(tables.Inventory).filter(
         tables.Inventory.quantity <= tables.Inventory.low_stock_threshold).all()
     return low_stock_items
+
+@app.post("/api/pets/", response_model=schemas.Pet)
+def create_pet(pet: schemas.PetIn, db: Session = Depends(get_db)):
+    '''Retorna um novo pet no  banco de dados.'''
+    db_pet = tables.Pet(**pet.dict())
+    db.add(db_pet)
+    db.commit()
+    db.refresh(db_pet)
+    return db_pet
+
+@app.get("/api/pets/", response_model=list[schemas.Pet])
+def get_pets(db: Session = Depends(get_db)):
+    '''Retorna a lista de pets no banco de dados.'''
+    pets = db.query(tables.Pet).all()
+    return pets

@@ -61,3 +61,17 @@ class Inventory(InventoryIn):
 
     class Config:
         orm_mode = True
+
+class PetIn(BaseModel):
+    name: str
+    breed: str
+    date_of_birth: datetime
+    customer_id: int
+
+
+class Pet(PetIn):
+    id: int
+
+    class Config:
+        orm_mode = True
+
