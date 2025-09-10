@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean
-from ..database import Base
+from ..core.database import Base
 
 
 class Sale(Base):
@@ -7,7 +7,7 @@ class Sale(Base):
     __tablename__ = "sales"
 
     id = Column(Integer, primary_key=True, index=True, comment="Identificador único da venda.")
-    product_id = Column(String, index=True, comment="Identificador único do produto.")
+    product_name = Column(String, index=True, comment="Identificador único do produto.") #troquei o nome para ser  igual, ao nome no inventario
     quantity = Column(Integer, comment="Quantidade do produto comprado.")
     total_value = Column(Float, comment="Valor total da venda.")
     customer_id = Column(String, index=True, comment="Identificador único do cliente.")
@@ -33,3 +33,13 @@ class Customer(Base):
     address = Column(String, index=True, comment="Endereço do cliente.")
     pet_name = Column(String, index=True, comment="Nome do pet do cliente.")
     pet_breed = Column(String, index=True, comment="Raça do pet do cliente.")  
+
+class Inventory(Base):
+    '''Representa a tabela de inventário dos produtos no banco de dados.'''
+    __tablename__ = "inventory"
+
+    id = Column(Integer,primary_key=True, index=True, comment="Identificador único do produto no inventário.")
+    product_name = Column(String, index=True, comment="Nome do produto.")
+    quantity = Column(Integer, comment="Quantidade disponível do produto.")
+    price = Column(Float, comment="Preço do produto.")
+    low_stock_threshold = Column(Integer, comment="Limite de estoque baixo.")

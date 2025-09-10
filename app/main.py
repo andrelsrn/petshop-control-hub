@@ -1,9 +1,13 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from . import models
-from .database import SessionLocal, engine
+from .core.database import SessionLocal, engine
 from .models import schemas, tables
+from sqlalchemy import func
+from datetime import date
 
+
+# models.Base.metadata.drop_all(bind=engine)
 
 tables.Base.metadata.create_all(bind=engine)
 
@@ -22,12 +26,22 @@ def get_db():
 # Cria endpoint para registrar uma nova venda
 @app.post("/api/events/new-sale", response_model=schemas.Sale)
 def create_new_sale(sale: schemas.Sale, db: Session = Depends(get_db)):
+    db_inventory_item = db.query(tables.Inventory).filter(
+        tables.Inventory.id == sale.product_id).first()
+
+    if not db_inventory_item:
+        raise HTTPException(
+            status_code=404, detail="Item não encontrado no inventário")
+
+    if db_inventory_item.quantity < sale.quantity:
+        raise HTTPException(status_code=400, detail="Fora de estoque")
+
+    db_inventory_item.quantity -= sale.quantity
     db_sale = tables.Sale(**sale.dict())
     db.add(db_sale)
     db.commit()
     db.refresh(db_sale)
     return db_sale
-
 
 
 # Cria endpoint para agendar um serviço
@@ -40,7 +54,6 @@ def create_new_booking(booking: schemas.Booking, db: Session = Depends(get_db)):
     return db_booking
 
 
-
 # Cria endpoint para registrar um novo cliente
 @app.post("/api/events/new-customer", response_model=schemas.Customer)
 def create_new_customer(customer: schemas.Customer, db: Session = Depends(get_db)):
@@ -50,3 +63,59 @@ def create_new_customer(customer: schemas.Customer, db: Session = Depends(get_db
     db.refresh(db_customer)
     return db_customer
 
+
+@app.get("/api/sales/", response_model=list[schemas.Sale])
+def get_all_sales(db: Session = Depends(get_db)):
+    '''Retorna a lista de todas as vendas registradas  no banco de dados.
+    '''
+    sales = db.query(tables.Sale).all()
+    return sales
+
+
+@app.get("/api/dashboard/kpis/", response_model=schemas.KPIs)
+def get_dashboard_kpis(db: Session = Depends(get_db)):
+    '''Calcula e retorna os principais  indicadores do negocio.'''
+
+    total_revenue_result = db.query(func.sum(tables.Sale.total_value)).scalar()
+    total_revenue = total_revenue_result or 0.0
+
+    total_sales = db.query(func.count(tables.Sale.id)).scalar()
+    total_bookings = db.query(func.count(tables.Booking.id)).scalar()
+    total_customers = db.query(func.count(tables.Customer.id)).scalar()
+
+    return schemas.KPIs(
+        total_revenue=total_revenue,
+        total_sales=total_sales,
+        total_bookings=total_bookings,
+        total_customers=total_customers
+    )
+
+
+@app.get("/api/schedule/today/", response_model=list[schemas.Booking])
+def get_todays_schedule(db: Session = Depends(get_db)):
+    """
+    Retorna a lista de todos os agendamentos agendados para o dia de hoje.
+    """
+    today = date.today()
+    bookings_today = db.query(tables.Booking).filter(
+        func.date(tables.Booking.scheduled_time) == today
+    ).all()
+    return bookings_today
+
+
+@app.post("/api/inventory/", response_model=schemas.Inventory)
+def create_inventory_item(inventory_item: schemas.Inventory, db: Session = Depends(get_db)):
+    '''Cria um novo item no inventário.'''
+    db_item = tables.Inventory(**inventory_item.dict())
+    db.add(db_item)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
+
+
+@app.get("/api/alert/low-stock/", response_model=list[schemas.Inventory])
+def get_low_stock_items(db: Session = Depends(get_db)):
+    '''Retorna a lista de itens com estoque baixo.'''
+    low_stock_items = db.query(tables.Inventory).filter(
+        tables.Inventory.quantity <= tables.Inventory.low_stock_threshold).all()
+    return low_stock_items
