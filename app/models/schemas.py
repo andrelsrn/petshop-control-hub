@@ -13,8 +13,6 @@ class Sale(BaseModel):
     customer_id: str
 
 
-
-
 class Booking(BaseModel):
     '''
     Representa o schema de um agendamento para validação de dados na API.
@@ -38,6 +36,7 @@ class Customer(BaseModel):
     pet_name: str
     pet_breed: str
 
+
 class KPIs(BaseModel):
     '''Modelo para os dados do dashboard.'''
     total_revenue: float
@@ -45,11 +44,20 @@ class KPIs(BaseModel):
     total_bookings: int
     total_customers: int
 
-class Inventory(BaseModel):
+
+class InventoryIn(BaseModel):
     '''Representa o schema de um produto no inventário para validação de dados na API.
     '''
-    id: int
-    product_name: str
+    product_name: str  # tirei o id
     quantity: int
     price: float
     low_stock_threshold: int
+
+
+class Inventory(InventoryIn):
+    '''Schema para retornar um  produto do inventário, incluindo o id.
+    '''
+    id: int
+
+    class Config:
+        orm_mode = True
