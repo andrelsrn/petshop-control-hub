@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from . import models
 from .core.database import SessionLocal, engine
 from .models import schemas, tables
@@ -8,7 +8,9 @@ from datetime import date
 from fastapi.middleware.cors import CORSMiddleware
 
 
+
 tables.Base.metadata.create_all(bind=engine)
+
 
 
 app = FastAPI(title="Pet Control Hub", version="1.0.0")
@@ -42,7 +44,7 @@ def get_db():
 @app.post("/api/events/new-sale", response_model=schemas.Sale)
 def create_new_sale(sale: schemas.Sale, db: Session = Depends(get_db)):
     db_inventory_item = db.query(tables.Inventory).filter(
-        tables.Inventory.id == sale.product_id).first()
+        tables.Inventory.product_name == sale.product_name).first()
 
     if not db_inventory_item:
         raise HTTPException(
@@ -52,7 +54,11 @@ def create_new_sale(sale: schemas.Sale, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Fora de estoque")
 
     db_inventory_item.quantity -= sale.quantity
-    db_sale = tables.Sale(**sale.dict())
+    db_sale = tables.Sale(
+        product_name=sale.product_name,
+        quantity=sale.quantity,
+        total_value=sale.total_value,
+        customer_id=sale.customer_id)
     db.add(db_sale)
     db.commit()
     db.refresh(db_sale)
@@ -71,12 +77,21 @@ def create_new_booking(booking: schemas.Booking, db: Session = Depends(get_db)):
 
 # Cria endpoint para registrar um novo cliente
 @app.post("/api/events/new-customer", response_model=schemas.Customer)
-def create_new_customer(customer: schemas.Customer, db: Session = Depends(get_db)):
+def create_new_customer(customer: schemas.CustomerIn, db: Session = Depends(get_db)):
     db_customer = tables.Customer(**customer.dict())
     db.add(db_customer)
     db.commit()
     db.refresh(db_customer)
     return db_customer
+
+
+@app.post("/api/events/new-employee", response_model=schemas.Employee)
+def create_new_employee(employee: schemas.EmployeeIn, db: Session = Depends(get_db)):
+    db_employee = tables.Employee(**employee.dict())
+    db.add(db_employee)
+    db.commit()
+    db.refresh(db_employee)
+    return db_employee
 
 
 @app.get("/api/sales/", response_model=list[schemas.Sale])
@@ -106,15 +121,19 @@ def get_dashboard_kpis(db: Session = Depends(get_db)):
     )
 
 
-@app.get("/api/schedule/today/", response_model=list[schemas.Booking])
+@app.get("/api/schedule/today/", response_model=list[schemas.BookingResponse])
 def get_todays_schedule(db: Session = Depends(get_db)):
     """
     Retorna a lista de todos os agendamentos agendados para o dia de hoje.
     """
     today = date.today()
-    bookings_today = db.query(tables.Booking).filter(
+    bookings_today = db.query(tables.Booking).options(
+    selectinload(tables.Booking.pet),
+    selectinload(tables.Booking.employee)
+    ).filter(
         func.date(tables.Booking.scheduled_time) == today
     ).all()
+
     return bookings_today
 
 
@@ -135,6 +154,7 @@ def get_low_stock_items(db: Session = Depends(get_db)):
         tables.Inventory.quantity <= tables.Inventory.low_stock_threshold).all()
     return low_stock_items
 
+
 @app.post("/api/pets/", response_model=schemas.Pet)
 def create_pet(pet: schemas.PetIn, db: Session = Depends(get_db)):
     '''Retorna um novo pet no  banco de dados.'''
@@ -143,6 +163,7 @@ def create_pet(pet: schemas.PetIn, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_pet)
     return db_pet
+
 
 @app.get("/api/pets/", response_model=list[schemas.Pet])
 def get_pets(db: Session = Depends(get_db)):

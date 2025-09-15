@@ -31,9 +31,9 @@ function Agenda() {
           {agendamentos.map(agendamento => (
             <li key={agendamento.id}>
               <h3>{agendamento.service_name}</h3>
-              <p>Pet ID: {agendamento.pet_id}</p>
+              <p>Pet ID: {agendamento.pet.id}</p>
               <p>Horário: {agendamento.scheduled_time}</p>
-              <p>Funcionário ID: {agendamento.employee_id}</p>
+              <p>Funcionário ID: {agendamento.employee.id}</p>
             </li>
           ))}
         </ul>
