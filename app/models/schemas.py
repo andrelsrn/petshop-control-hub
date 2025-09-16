@@ -1,5 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from datetime import datetime
+from validate_docbr import CPF
+import re
+
 
 
 class Sale(BaseModel):
@@ -45,6 +48,13 @@ class Customer(CustomerIn):
     class Config:
         from_attributes = True
 
+def normalize_cpf(cpf: str) -> str:
+    '''Remove todos os caracteres não numéricos de um CPF.'''
+    if not cpf:
+        return ""
+    return  re.sub(r'\D', '', cpf)
+
+
 
 class EmployeeIn(BaseModel):
     '''Representa o schema de um funcionário para validação de dados na API.
@@ -53,6 +63,18 @@ class EmployeeIn(BaseModel):
     name: str
     job_title: str
     phone: str
+    cpf: str
+
+    @validator('cpf')
+    def validate_and_normalize_cpf(cls, v):
+        '''Valida o CPF e o retorna normalizado.'''
+        normalized_cpf = normalize_cpf(v)
+
+        cpf_validator = CPF()
+        if not cpf_validator.validate(normalized_cpf):
+            raise ValueError('CPF inválido')
+
+        return normalized_cpf
 
 
 class Employee(EmployeeIn):

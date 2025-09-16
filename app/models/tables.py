@@ -10,7 +10,7 @@ class Sale(Base):
 
     id = Column(Integer, primary_key=True, index=True,
                 comment="Identificador único da venda.")
-    # troquei o nome para ser  igual, ao nome no inventario
+    
     product_name = Column(String, index=True,
                           comment="Identificador único do produto.")
     quantity = Column(Integer, comment="Quantidade do produto comprado.")
@@ -43,24 +43,37 @@ class Customer(Base):
     '''Representa a tabela de clientes no banco de dados.'''
     __tablename__ = "customers"
 
-    id = Column(Integer, primary_key=True, index=True,
+    id = Column(Integer, primary_key=True,
                 comment="Identificador único do cliente.")
-    name = Column(String, index=True, comment="Nome do cliente.")
-    phone = Column(String, index=True,
-                   comment="Número de telefone do cliente.")
-    address = Column(String, index=True, comment="Endereço do cliente.")
+    
+    name = Column(String(100), index=True, nullable=False,
+                  comment="Nome do cliente.")
+    
+    phone = Column(String(20), unique=True, index=True, nullable=False,
+                   comment="Número de telefone único e normalizado do cliente.")
+    
+    address = Column(String(255), nullable=True,
+                     comment="Endereço do cliente (opcional).")
 
 
 class Employee(Base):
-    '''Representa a tabela de funcionários no banco de dados.'''
+    '''Representa a tabela de funcionários no banco de dados.c'''
     __tablename__ = "employees"
 
-    id = Column(Integer, primary_key=True, index=True,
+    id = Column(Integer, primary_key=True,
                 comment="Identificador único do funcionário.")
-    name = Column(String, index=True, comment="Nome do funcionário.")
-    job_title = Column(String, index=True, comment="Cargo do funcionário.")
-    phone = Column(String, index=True,
+    
+    name = Column(String(100), index=True, nullable=False,
+                  comment="Nome do funcionário.")
+
+    job_title = Column(String(100), index=True, comment="Cargo do funcionário.")
+
+    phone = Column(String(20), index=True,
                    comment="Número de telefone do funcionário.")
+    
+    cpf = Column(String(11), unique=True, index=True, nullable=False,
+                 comment="CPF único e normalizado do funcionário.")
+    
     bookings = relationship("Booking", back_populates="employee")
 
 

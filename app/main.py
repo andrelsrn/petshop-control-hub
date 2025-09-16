@@ -6,7 +6,7 @@ from .models import schemas, tables
 from sqlalchemy import func
 from datetime import date
 from fastapi.middleware.cors import CORSMiddleware
-
+import re
 
 
 tables.Base.metadata.create_all(bind=engine)
@@ -40,9 +40,25 @@ def get_db():
         db.close()
 
 
-# Cria endpoint para registrar uma nova venda
-@app.post("/api/events/new-sale", response_model=schemas.Sale)
+
+@app.post("/api/sales", response_model=schemas.Sale)
 def create_new_sale(sale: schemas.Sale, db: Session = Depends(get_db)):
+    '''Cria uma nova venda no banco de dados e debita o estoque.
+
+    Esta função verifica se o produto existe e se há quantidade 
+    suficiente em estoque antes de registrar a venda.
+
+    Args:
+        sale (schemas.Sale): Objeto com os dados da venda a ser criada.
+        db (Session): Sessão do banco de dados injetada pelo FastAPI.
+
+    Raises:
+        HTTPException 404: Se o produto não for encontrado no inventário.
+        HTTPException 400: Se a quantidade em estoque for insuficiente.
+
+    Returns:
+        tables.Sale: O objeto da venda que foi salvo no banco de dados.
+    '''
     db_inventory_item = db.query(tables.Inventory).filter(
         tables.Inventory.product_name == sale.product_name).first()
 
@@ -65,9 +81,36 @@ def create_new_sale(sale: schemas.Sale, db: Session = Depends(get_db)):
     return db_sale
 
 
-# Cria endpoint para agendar um serviço
-@app.post("/api/events/new-booking", response_model=schemas.Booking)
+
+@app.post("/api/bookings", response_model=schemas.Booking)
 def create_new_booking(booking: schemas.Booking, db: Session = Depends(get_db)):
+    """Cria um novo agendamento após verificar a disponibilidade de horário.
+
+    Esta rota primeiro consulta o banco de dados para garantir que não existe
+    outro agendamento para o mesmo funcionário no mesmo horário. Se o horário
+    estiver livre, o novo agendamento é criado.
+
+    Args:
+        booking (schemas.Booking): Os dados do novo agendamento a ser criado.
+        db (Session): A sessão do banco de dados, injetada pelo FastAPI.
+
+    Raises:
+        HTTPException: Com status 409 (Conflict), caso o horário já esteja
+                       ocupado para o funcionário especificado.
+
+    Returns:
+        tables.Booking: O objeto do agendamento que foi salvo no banco de dados.
+    """
+    existing_booking = db.query(tables.Booking).filter(
+        tables.Booking.employee_id == booking.employee_id,
+        tables.Booking.scheduled_time == booking.scheduled_time).first()
+
+    if existing_booking:
+        raise HTTPException(
+            status_code=409,
+            detail=f"O funcionário já possui um agendamento neste horário ({booking.scheduled_time})."
+    )
+
     db_booking = tables.Booking(**booking.dict())
     db.add(db_booking)
     db.commit()
@@ -75,19 +118,100 @@ def create_new_booking(booking: schemas.Booking, db: Session = Depends(get_db)):
     return db_booking
 
 
-# Cria endpoint para registrar um novo cliente
-@app.post("/api/events/new-customer", response_model=schemas.Customer)
+
+def normalize_phone(phone: str) -> str:
+    '''Remove todos os caracteres não numéricos de um número de telefone.'''
+    if not phone:
+        return ""
+    return  re.sub(r'\D', '', phone)
+
+
+
+@app.post("/api/customers", response_model=schemas.Customer)
 def create_new_customer(customer: schemas.CustomerIn, db: Session = Depends(get_db)):
-    db_customer = tables.Customer(**customer.dict())
+    """Cria um novo cliente após validar os dados e checar por duplicatas.
+
+    Esta rota executa os seguintes passos:
+    1. Normaliza o número de telefone removendo todos os caracteres não numéricos.
+    2. Valida se o telefone fornecido não é vazio ou inválido.
+    3. Verifica no banco de dados se já existe um cliente com o mesmo telefone normalizado.
+    4. Se não houver duplicatas, cria e salva o novo cliente com o telefone já normalizado.
+
+    Args:
+        customer (schemas.CustomerIn): Os dados do novo cliente a ser criado.
+        db (Session): A sessão do banco de dados, injetada pelo FastAPI.
+
+    Raises:
+        HTTPException 400 (Bad Request): Se o número de telefone for inválido.
+        HTTPException 409 (Conflict): Se já existir um cliente com o mesmo telefone.
+
+    Returns:
+        schemas.Customer: O objeto do cliente que foi salvo no banco de dados.
+    """
+    normalized_phone = normalize_phone(customer.phone)
+
+    if not normalized_phone:
+        raise HTTPException(
+            status_code=400,
+              detail="Número de telefone inválido"
+        )
+
+    existing_customer = db.query(tables.Customer).filter(
+        tables.Customer.phone == normalized_phone).first()
+    
+    if existing_customer:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Já existe um cliente cadastrado com este telefone. Cliente: {existing_customer.name}"
+        )
+    
+    
+    db_customer = tables.Customer(
+        name=customer.name,
+        phone=normalized_phone,
+        address=customer.address
+    )
     db.add(db_customer)
     db.commit()
     db.refresh(db_customer)
     return db_customer
 
 
-@app.post("/api/events/new-employee", response_model=schemas.Employee)
+@app.post("/api/employees", response_model=schemas.Employee)
 def create_new_employee(employee: schemas.EmployeeIn, db: Session = Depends(get_db)):
-    db_employee = tables.Employee(**employee.dict())
+    """Cria um novo funcionário após checar por duplicatas de CPF.
+
+    A validação da estrutura e formato do CPF é realizada previamente no
+    schema Pydantic (EmployeeIn). Esta função foca na regra de negócio de
+    garantir que não exista mais de um funcionário com o mesmo CPF no sistema.
+
+    Args:
+        employee (schemas.EmployeeIn): Os dados validados do funcionário,
+                                       já com o CPF normalizado.
+        db (Session): A sessão do banco de dados injetada pelo FastAPI.
+
+    Raises:
+        HTTPException 409 (Conflict): Se já existir um funcionário cadastrado
+                                      com o CPF fornecido.
+
+    Returns:
+        schemas.Employee: O objeto do funcionário que foi salvo no banco de dados.
+    """
+    existing_employee = db.query(tables.Employee).filter(
+        tables.Employee.cpf == employee.cpf).first()
+    
+    if existing_employee:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Já existe um funcionário cadastrado com este CPF. Funcionário: {existing_employee.name}"
+        )
+
+    db_employee = tables.Employee(
+        name=employee.name,
+        job_title=employee.job_title,
+        phone=normalize_phone(employee.phone),
+        cpf=employee.cpf
+    )
     db.add(db_employee)
     db.commit()
     db.refresh(db_employee)
