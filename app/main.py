@@ -1,11 +1,8 @@
 from fastapi import FastAPI
-from .core.database import SessionLocal, engine
-from .models import schemas, tables
+from .core.database import  engine
+from . import models
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import customers, bookings, sales, employees, pets, dashboard, inventory, schedule
-
-
-tables.Base.metadata.create_all(bind=engine)
 
 
 app = FastAPI(title="Pet Control Hub", version="1.0.0")

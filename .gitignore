@@ -1,10 +1,40 @@
-# Ignorar dependências do Node.js
-/frontend/node_modules/
+# Ambientes Virtuais
 
-# Ignorar o cache do Python
-__pycache__/
+/venv/
+/.venv/
+/env/
+/ENV/
 
+# Arquivos de Cache do Python
 
+/__pycache__/
 *.pyc
-node_modules/
+*.pyo
+*.pyd
 
+# Arquivos de Banco de Dados SQLite
+
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Arquivos de configuração de IDEs/Editores
+
+/.vscode/
+/.idea/
+
+# Arquivos de sistema operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos de ambiente (.env)
+
+.env
+.env.*
+!.env.example
+
+# Relatórios de testes e cobertura
+.pytest_cache/
+.coverage
+htmlcov/

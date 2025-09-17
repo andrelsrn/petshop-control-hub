@@ -1,10 +1,15 @@
 from logging.config import fileConfig
-
+from app.core.database import Base
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
-from app.models.tables import Base, Customer, Pet, Vaccine, Sale, Booking, Inventory
-
+from app.models import Customer, Pet, Vaccine, Sale, Booking, Inventory
+import sys
+from os.path import abspath, dirname
 from alembic import context
+
+
+sys.path.insert(0, dirname(dirname(abspath(__file__))))
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -42,6 +47,8 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+# Em alembic/env.py
+
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
     connectable = engine_from_config(
@@ -51,10 +58,16 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
+
+
+        from sqlalchemy import inspect
+        inspector = inspect(connection)
+        db_tables = inspector.get_table_names()
+
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            render_as_batch=True,  # <<< habilita batch mode para SQLite
+            render_as_batch=True,
         )
 
         with context.begin_transaction():
