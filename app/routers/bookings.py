@@ -4,7 +4,10 @@ from app.models import schemas, tables
 from app.core.database import get_db
 import re
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/api/bookings",
+    tags=["Bookings"]
+)
 
 
 

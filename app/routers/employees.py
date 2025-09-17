@@ -4,7 +4,10 @@ from app.models import schemas, tables
 from app.core.database import get_db
 import re
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/api/employees",
+    tags=["Employees"]
+)
 
 def normalize_phone(phone: str) -> str:
     '''Remove todos os caracteres não numéricos de um número de telefone.'''
