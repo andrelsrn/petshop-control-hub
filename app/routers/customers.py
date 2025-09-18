@@ -63,3 +63,49 @@ def create_new_customer(customer: schemas.CustomerIn, db: Session = Depends(get_
     db.commit()
     db.refresh(db_customer)
     return db_customer
+
+@router.get("/", response_model=list[schemas.Customer])
+def get_all_customers(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """
+    Retorna uma lista de clientes com suporte a paginação.
+
+    Este endpoint permite buscar clientes em lotes,
+    especificando o número de registros a pular (`skip`) e o limite
+    de resultados por página (`limit`). Se nenhum parâmetro for fornecido,
+    retorna os primeiros 100 clientes.
+    """
+    customers = db.query(models.Customer).offset(skip).limit(limit).all()
+    return customers
+
+@router.get("/{customer_id}", response_model=schemas.Customer)
+def get_customer_by_id(customer_id: int, db: Session = Depends(get_db)):
+    """
+    Retorna um cliente pelo seu ID.
+    
+    Este endpoint  permite buscar o cliente pelo seu ID especificado.
+    """
+
+    customer = db.query(models.Customer).filter(models.Customer.id == customer_id).first()
+    if customer is None:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    return customer
+
+@router.get("/search/", response_model=list[schemas.CustomerSearchResult])
+def search_customers_by_name(name: str, db: Session = Depends(get_db)):
+    """
+    Busca clientes com base no nome e retorna o nome e ID para identificação.
+    
+    Este endpoint otimizado retorna uma lista de objetos contendo
+    apenas o ID e o nome dos clientes que correspondem à busca.
+    """
+
+    results = db.query(models.Customer.id, models.Customer.name).filter(
+        models.Customer.name.ilike(f"%{name}%")).all()
+
+    if not results:
+        raise HTTPException(status_code=404, detail="Nenhum cliente encontrado")
+
+    customers = [{"id": r[0], "name": r[1]} for r in results]
+
+    return customers
+        
