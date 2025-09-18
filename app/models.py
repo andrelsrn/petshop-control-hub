@@ -29,7 +29,9 @@ class Pet(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     name = Column(String(100), nullable=False)
-    breed = Column(String(100))
+    name_tutor = Column(String(100), ForeignKey("customers.name"), nullable=False)
+    breed = Column(String(100), nullable=False)
+    species = Column(String(100), nullable=False)
     date_of_birth = Column(DateTime(timezone=True))
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False)
 

@@ -124,7 +124,9 @@ class Inventory(InventoryIn):
 
 class PetIn(BaseModel):
     name: str
+    name_tutor: str 
     breed: str
+    species: str
     date_of_birth: datetime
     customer_id: int
 
