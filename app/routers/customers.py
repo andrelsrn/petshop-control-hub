@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models import schemas, tables
+from app import schemas, models
 from app.core.database import get_db
 import re
 
@@ -45,8 +45,8 @@ def create_new_customer(customer: schemas.CustomerIn, db: Session = Depends(get_
             detail="Número de telefone inválido"
         )
 
-    existing_customer = db.query(tables.Customer).filter(
-        tables.Customer.phone == normalized_phone).first()
+    existing_customer = db.query(models.Customer).filter(
+        models.Customer.phone == normalized_phone).first()
 
     if existing_customer:
         raise HTTPException(
@@ -54,7 +54,7 @@ def create_new_customer(customer: schemas.CustomerIn, db: Session = Depends(get_
             detail=f"Já existe um cliente cadastrado com este telefone. Cliente: {existing_customer.name}"
         )
 
-    db_customer = tables.Customer(
+    db_customer = models.Customer(
         name=customer.name,
         phone=normalized_phone,
         address=customer.address

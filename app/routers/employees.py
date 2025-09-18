@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models import schemas, tables
+from app import schemas, models
 from app.core.database import get_db
 import re
 
@@ -35,8 +35,8 @@ def create_new_employee(employee: schemas.EmployeeIn, db: Session = Depends(get_
     Returns:
         schemas.Employee: O objeto do funcionário que foi salvo no banco de dados.
     """
-    existing_employee = db.query(tables.Employee).filter(
-        tables.Employee.cpf == employee.cpf).first()
+    existing_employee = db.query(models.Employee).filter(
+        models.Employee.cpf == employee.cpf).first()
     
     if existing_employee:
         raise HTTPException(
@@ -44,7 +44,7 @@ def create_new_employee(employee: schemas.EmployeeIn, db: Session = Depends(get_
             detail=f"Já existe um funcionário cadastrado com este CPF. Funcionário: {existing_employee.name}"
         )
 
-    db_employee = tables.Employee(
+    db_employee = models.Employee(
         name=employee.name,
         job_title=employee.job_title,
         phone=normalize_phone(employee.phone),

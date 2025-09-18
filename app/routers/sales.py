@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models import schemas, tables
+from app import schemas, models
 from app.core.database import get_db
 import re
 
@@ -29,8 +29,8 @@ def create_new_sale(sale: schemas.Sale, db: Session = Depends(get_db)):
     Returns:
         tables.Sale: O objeto da venda que foi salvo no banco de dados.
     '''
-    db_inventory_item = db.query(tables.Inventory).filter(
-        tables.Inventory.product_name == sale.product_name).first()
+    db_inventory_item = db.query(models.Inventory).filter(
+        models.Inventory.product_name == sale.product_name).first()
 
     if not db_inventory_item:
         raise HTTPException(
@@ -40,7 +40,7 @@ def create_new_sale(sale: schemas.Sale, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Fora de estoque")
 
     db_inventory_item.quantity -= sale.quantity
-    db_sale = tables.Sale(
+    db_sale = models.Sale(
         product_name=sale.product_name,
         quantity=sale.quantity,
         total_value=sale.total_value,
@@ -69,5 +69,5 @@ def get_all_sales(db: Session = Depends(get_db)):
         list[schemas.Sale]: Uma lista de objetos, onde cada objeto
                             representa uma venda registrada.
     """
-    sales = db.query(tables.Sale).all()
+    sales = db.query(models.Sale).all()
     return sales

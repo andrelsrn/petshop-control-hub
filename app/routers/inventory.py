@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from app.models import schemas, tables
+from app import schemas, models
 from app.core.database import get_db
 
 
@@ -31,7 +31,7 @@ def create_inventory_item(inventory_item: schemas.InventoryIn, db: Session = Dep
     Endpoint:
         /api/inventory/
     """
-    db_item = tables.Inventory(**inventory_item.dict())
+    db_item = models.Inventory(**inventory_item.dict())
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
@@ -47,8 +47,8 @@ def get_inventory_items(
     Retorna uma lista de itens do inventário.
     - Use o parâmetro `?low_stock=true` para filtrar apenas itens com estoque baixo.
     """
-    query = db.query(tables.Inventory)
+    query = db.query(models.Inventory)
     if low_stock:
-        query = query.filter(tables.Inventory.quantity <= tables.Inventory.low_stock_threshold)
+        query = query.filter(models.Inventory.quantity <= models.Inventory.low_stock_threshold)
 
     return query.all()

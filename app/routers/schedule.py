@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, selectinload
 from datetime import date
-from app.models import schemas, tables
+from app import schemas, models
 from app.core.database import get_db
 from sqlalchemy import func
 
@@ -33,11 +33,11 @@ def get_todays_schedule(db: Session = Depends(get_db)):
         um agendamento do dia, com informações do pet e do funcionário.
     """
     today = date.today()
-    bookings_today = db.query(tables.Booking).options(
-        selectinload(tables.Booking.pet),
-        selectinload(tables.Booking.employee)
+    bookings_today = db.query(models.Booking).options(
+        selectinload(models.Booking.pet),
+        selectinload(models.Booking.employee)
     ).filter(
-        func.date(tables.Booking.scheduled_time) == today
+        func.date(models.Booking.scheduled_time) == today
     ).all()
 
     return bookings_today

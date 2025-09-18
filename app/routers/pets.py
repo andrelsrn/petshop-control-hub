@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models import schemas, tables
+from app import schemas, models
 from app.core.database import get_db
 import re
 
@@ -22,7 +22,7 @@ def create_pet(pet: schemas.PetIn, db: Session = Depends(get_db)):
     Returns:
         schemas.Pet: O pet criado, incluindo ID e demais campos persistidos no banco.
     """
-    db_pet = tables.Pet(**pet.dict())
+    db_pet = models.Pet(**pet.dict())
     db.add(db_pet)
     db.commit()
     db.refresh(db_pet)
@@ -40,5 +40,5 @@ def get_pets(db: Session = Depends(get_db)):
     Returns:
         list[schemas.Pet]: Lista de todos os pets cadastrados.
     """
-    pets = db.query(tables.Pet).all()
+    pets = db.query(models.Pet).all()
     return pets

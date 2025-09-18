@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models import schemas, tables
+from app import schemas, models
 from app.core.database import get_db
 from sqlalchemy import func
 
@@ -28,12 +28,12 @@ def get_dashboard_kpis(db: Session = Depends(get_db)):
                       de vendas, agendamentos e clientes.
     """
 
-    total_revenue_result = db.query(func.sum(tables.Sale.total_value)).scalar()
+    total_revenue_result = db.query(func.sum(models.Sale.total_value)).scalar()
     total_revenue = total_revenue_result or 0.0
 
-    total_sales = db.query(func.count(tables.Sale.id)).scalar()
-    total_bookings = db.query(func.count(tables.Booking.id)).scalar()
-    total_customers = db.query(func.count(tables.Customer.id)).scalar()
+    total_sales = db.query(func.count(models.Sale.id)).scalar()
+    total_bookings = db.query(func.count(models.Booking.id)).scalar()
+    total_customers = db.query(func.count(models.Customer.id)).scalar()
 
     return schemas.KPIs(
         total_revenue=total_revenue,
