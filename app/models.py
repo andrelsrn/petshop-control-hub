@@ -15,7 +15,7 @@ class Customer(Base):
     name = Column(String(100), nullable=False)
     phone = Column(String(20), unique=True, index=True, nullable=False)
     address = Column(String(255))
-    cpf = Column(String(11), unique=True, index=True, nullable=True)
+    cpf = Column(String(11), unique=True, index=True, nullable=False)
 
     pets = relationship("Pet", back_populates="owner", cascade="all, delete-orphan")
     sales = relationship("Sale", back_populates="customer", cascade="all, delete-orphan")
@@ -29,7 +29,6 @@ class Pet(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     name = Column(String(100), nullable=False)
-    name_tutor = Column(String(100), ForeignKey("customers.name"), nullable=False)
     breed = Column(String(100), nullable=False)
     species = Column(String(100), nullable=False)
     date_of_birth = Column(DateTime(timezone=True))

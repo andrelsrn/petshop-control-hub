@@ -57,7 +57,8 @@ def create_new_customer(customer: schemas.CustomerIn, db: Session = Depends(get_
     db_customer = models.Customer(
         name=customer.name,
         phone=normalized_phone,
-        address=customer.address
+        address=customer.address,
+        cpf=customer.cpf
     )
     db.add(db_customer)
     db.commit()
@@ -109,3 +110,35 @@ def search_customers_by_name(name: str, db: Session = Depends(get_db)):
 
     return customers
         
+@router.patch("/{customer_id}", response_model=schemas.Customer)
+def update_customer(customer_id: int,
+                    customer_update: schemas.CustomerUpdate, db: Session = Depends(get_db)):
+    '''Atualiza um cliente existente.
+    
+    Args:
+        customer_id (int): O ID do cliente a ser atualizado.
+        customer_update (schemas.CustomerUpdate): Os dados a serem atualizados.
+        db (Session): A sessão do banco de dados para a operação.
+        
+    Raises:
+        HTTPException: Exceção HTTP 404 se o cliente não for encontrado.
+        
+    Returns:
+        models.Customer: O objeto do cliente atualizado.
+    '''
+
+    db_customer = db.query(models.Customer).filter(
+        models.Customer.id == customer_id).first()
+    
+    if not db_customer:
+        raise HTTPException(
+            status_code=404,
+            detail="Cliente não encontrado"
+        )
+    
+    for key, value in customer_update.dict(exclude_unset=True).items():
+        setattr(db_customer, key, value)
+    
+    db.commit()
+    db.refresh(db_customer)
+    return db_customer

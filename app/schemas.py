@@ -2,6 +2,9 @@ from pydantic import BaseModel, validator
 from datetime import datetime
 from validate_docbr import CPF
 import re
+from typing import Optional
+
+
 
 
 class Sale(BaseModel):
@@ -173,4 +176,21 @@ class CustomerSearchResult(BaseModel):
     class Config:
         from_attributes = True
 
-        
+class BookingUpdate(BaseModel):
+    service_name: Optional[str] = None
+    scheduled_time: Optional[datetime] = None
+    delivery: Optional[bool] = None
+    pet_id: Optional[int] = None
+    employee_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+class CustomerUpdate(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    cpf: Optional[str] = None
+
+    class Config:
+        from_attributes = True
