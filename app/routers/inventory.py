@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from app import schemas, models
+from app import models
 from app.core.database import get_db
+from app.schemas import inventory as schemas
+
+
 
 
 router = APIRouter(

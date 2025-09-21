@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app import schemas, models
+from app import models
 from app.core.database import get_db
-import re
+from app.schemas import pet as schemas
 
 router = APIRouter(
     prefix="/api/pets",

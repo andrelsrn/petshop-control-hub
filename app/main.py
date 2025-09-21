@@ -1,6 +1,4 @@
 from fastapi import FastAPI
-from .core.database import  engine
-from . import models
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import customers, bookings, sales, employees, pets, dashboard, inventory, schedule
 

@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, selectinload
 from datetime import date
-from app import schemas, models
+from app import models
 from app.core.database import get_db
 from sqlalchemy import func
+from app.schemas import booking as schemas
+
 
 
 
