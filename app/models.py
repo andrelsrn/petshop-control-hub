@@ -53,6 +53,8 @@ class Employee(Base):
     job_title = Column(String(100), nullable=False)
     phone = Column(String(20))
     cpf = Column(String(11), unique=True, index=True, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+
 
     bookings = relationship("Booking", back_populates="employee")
 

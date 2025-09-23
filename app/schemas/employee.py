@@ -11,7 +11,11 @@ def normalize_cpf(cpf: str) -> str:
         return ""
     return re.sub(r'\D', '', cpf)
 
-
+def normalize_phone(phone: str) -> str:
+    '''Remove todos os caracteres não numéricos de um número de telefone.'''
+    if not phone:
+        return ""
+    return re.sub(r'\D', '', phone)
 
 class EmployeeIn(BaseModel):
     '''Representa o schema de um funcionário para validação de dados na API.
@@ -32,6 +36,17 @@ class EmployeeIn(BaseModel):
             raise ValueError('CPF inválido')
 
         return normalized_cpf
+    
+    @validator('phone')
+    def validate_and_normalize_phone(cls, v):
+        '''Normaliza o telefone, removendo caracteres não numéricos.'''
+        normalized_phone = normalize_phone(v)
+        
+        # Validação simples para garantir que o telefone não é muito curto
+        if not normalized_phone or len(normalized_phone) < 10:
+            raise ValueError('Número de telefone inválido')
+            
+        return normalized_phone    
 
 
 class Employee(EmployeeIn):
@@ -50,5 +65,3 @@ class EmployeeUpdate(BaseModel):
 
     class Config:
         from_attributes = True
-
-    cpf: str
