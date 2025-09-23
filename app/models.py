@@ -101,7 +101,10 @@ class Sale(Base):
     quantity = Column(Integer, nullable=False)
     total_value = Column(Float, nullable=False)
     product_id = Column(Integer, ForeignKey("inventory.id"), nullable=False)
-    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False) # <<< CORRIGIDO
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False) 
+    
+    is_active = Column(Boolean, default=True, nullable=False)
+
 
     product = relationship("Inventory", back_populates="sale_items")
     customer = relationship("Customer", back_populates="sales")
