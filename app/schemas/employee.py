@@ -1,6 +1,9 @@
 from pydantic import BaseModel, validator
 from validate_docbr import CPF
 import re
+from typing import Optional
+
+
 
 def normalize_cpf(cpf: str) -> str:
     '''Remove todos os caracteres não numéricos de um CPF.'''
@@ -38,3 +41,14 @@ class Employee(EmployeeIn):
 
     class Config:
         from_attributes = True
+
+class EmployeeUpdate(BaseModel):
+    name: Optional[str] = None
+    job_title: Optional[str] = None
+    phone: Optional[str] = None
+    cpf: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+    cpf: str

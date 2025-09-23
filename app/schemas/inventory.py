@@ -20,3 +20,12 @@ class Inventory(InventoryIn):
 
     class Config:
         orm_mode = True
+
+class InventoryUpdate(BaseModel):
+    product_name: str | None = None
+    quantity: int | None = None
+    price: float | None = None
+    low_stock_threshold: int | None = None
+
+    class Config:
+        from_attributes = True

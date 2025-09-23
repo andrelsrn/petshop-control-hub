@@ -16,3 +16,14 @@ class Pet(PetIn):
 
     class Config:
         orm_mode = True
+
+class PetUpdate(BaseModel):
+    name: str | None = None
+    name_tutor: str | None = None
+    breed: str | None = None
+    species: str | None = None
+    date_of_birth: datetime | None = None
+    customer_id: int | None = None
+
+    class Config:
+        from_attributes = True
