@@ -4,7 +4,6 @@ from datetime import datetime
 
 class PetIn(BaseModel):
     name: str
-    name_tutor: str 
     breed: str
     species: str
     date_of_birth: datetime
@@ -19,7 +18,6 @@ class Pet(PetIn):
 
 class PetUpdate(BaseModel):
     name: str | None = None
-    name_tutor: str | None = None
     breed: str | None = None
     species: str | None = None
     date_of_birth: datetime | None = None
