@@ -138,10 +138,14 @@ def delete_customer(
     customer: models.Customer = Depends(get_customer_or_404),
     db: Session = Depends(get_db)
 ):
-    '''Deleta um cliente pelo seu ID.
+    '''Soft delete de um cliente pelo seu ID.
 
     Args:
         customer_id (int): O ID do cliente a ser deletado.
+        db (Session): A sessão do banco de dados, injetada pelo FastAPI.
+
+    Returns:
+        Response: Uma resposta HTTP com o status 204 (No Content) em caso de sucesso.
     '''
     customer.is_active = False
     db.add(customer)

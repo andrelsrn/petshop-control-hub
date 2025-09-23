@@ -70,6 +70,8 @@ class Booking(Base):
     pet_id = Column(Integer, ForeignKey("pets.id"), nullable=False)
     employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
 
+    is_active = Column(Boolean, default=True, nullable=False)
+    
     pet = relationship("Pet", back_populates="bookings")
     employee = relationship("Employee", back_populates="bookings")
     
