@@ -5,6 +5,14 @@ import re
 from typing import Optional
 
 
+def normalize_text(text: str) -> str:
+    '''Remove todos os caracteres não alfanuméricos de um texto.'''
+    if not text:
+        return ""
+    return re.sub(r'\D', '', text)
+
+
+
 class CustomerIn(BaseModel):
     """
     Representa o schema de um cliente para validação de dados na API.
@@ -25,6 +33,20 @@ class CustomerIn(BaseModel):
             raise ValueError('CPF inválido')
 
         return normalized_cpf
+
+    @validator('phone')
+    def validate_and_normalize_phone(cls, v):
+        '''Valida o número de telefone e o retorna normalizado.'''
+        normalized_phone = normalize_text(v)
+
+        if not normalized_phone or len(normalized_phone) < 10:
+            raise ValueError('Número de telefone inválido')
+
+        return normalized_phone
+
+
+
+
 
 
 def normalize_cpf(cpf: str) -> str:
