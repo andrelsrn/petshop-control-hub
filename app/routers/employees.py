@@ -19,8 +19,8 @@ def get_employee_or_404(employee_id: int, db: Session = Depends(get_db)):
     """
     db_employee = db.query(models.Employee).filter(
         models.Employee.id == employee_id,
-        models.Employee.is_active == True 
-    ).first()  
+        models.Employee.is_active == True
+    ).first()
     if not db_employee:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -75,8 +75,8 @@ def create_new_employee(employee: schemas.EmployeeIn, db: Session = Depends(get_
 
 @router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_employee(
-                    employee: models.Employee = Depends(get_employee_or_404),
-                    db: Session = Depends(get_db)):
+        employee: models.Employee = Depends(get_employee_or_404),
+        db: Session = Depends(get_db)):
     '''Soft delete de um funcionario pelo seu ID.
 
     Args:
@@ -87,20 +87,17 @@ def delete_employee(
         Response: Uma resposta HTTP com o status 204 (No Content) em caso de sucesso.
     '''
 
-
     employee.is_active = False
     db.add(employee)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-
-
 @router.patch("/{employee_id}", response_model=schemas.Employee)
 def update_employee(
-                    employee_update: schemas.EmployeeUpdate,
-                    db_employee: models.Employee = Depends(get_employee_or_404),
-                    db: Session = Depends(get_db)):
+        employee_update: schemas.EmployeeUpdate,
+        db_employee: models.Employee = Depends(get_employee_or_404),
+        db: Session = Depends(get_db)):
     '''Atualiza um funcionário existente.
 
     Args:
@@ -114,8 +111,6 @@ def update_employee(
     Returns:
         models.Employee: O objeto do funcionário atualizado.
     '''
-
-
 
     for key, value in employee_update.dict(exclude_unset=True).items():
         setattr(db_employee, key, value)
@@ -138,6 +133,7 @@ def get_all_employees(skip: int = 0, limit: int = 100, db: Session = Depends(get
         models.Employee.is_active == True).offset(skip).limit(limit).all()
 
     return employees
+
 
 @router.get("/{employee_id}", response_model=schemas.Employee)
 def get_employee_by_id(

@@ -36,6 +36,8 @@ class Pet(Base):
     date_of_birth = Column(DateTime(timezone=True))
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False)
 
+    is_active = Column(Boolean, default=True, nullable=False)
+
     owner = relationship("Customer", back_populates="pets")
     bookings = relationship("Booking", back_populates="pet", cascade="all, delete-orphan")
     vaccines = relationship("Vaccine", back_populates="pet", cascade="all, delete-orphan")

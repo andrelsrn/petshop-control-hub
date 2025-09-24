@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException,  Response, status
 from sqlalchemy.orm import Session
 from app import models
 from app.core.database import get_db
@@ -8,6 +8,23 @@ router = APIRouter(
     prefix="/api/pets",
     tags=["Pets"]
 )
+
+
+def get_pet_or_404(pet_id: int, db: Session = Depends(get_db)):
+    """
+    Dependência que busca um funcionário ATIVO pelo ID.
+    Lança HTTPException 404 se o funcionário não for encontrado ou estiver inativo.
+    """
+    db_pet = db.query(models.Pet).filter(
+        models.Pet.id == pet_id).filter(
+            models.Pet.is_active == True).first()
+
+    if not db_pet:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Pet com ID {pet_id} não encontrado ou está inativo."
+        )
+    return db_pet
 
 
 @router.post("/", response_model=schemas.Pet)
@@ -30,38 +47,57 @@ def create_pet(pet: schemas.PetIn, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=list[schemas.Pet])
-def get_all_pets(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def get_all_pets(
+        db: Session = Depends(get_db),
+        skip: int = 0,
+        limit: int = 100,
+        include_inactive: bool = False
+):
+    
     """
     Retorna uma lista de pets com suporte a paginação.
 
     Este endpoint permite buscar pets em lotes, especificando o número
     de registros a pular (`skip`) e o limite de resultados por página (`limit`).
     Se nenhum parâmetro for fornecido, retorna os primeiros 100 pets.
+    
+    Permite a inclusao de pets inativos na lista.
     """
-    pets = db.query(models.Pet).offset(skip).limit(limit).all()
+    
+    query = db.query(models.Pet)
+    
+    if not include_inactive:
+        query = query.filter(models.Pet.is_active == True)
+    
+    pets = query.offset(skip).limit(limit).all()
     return pets
 
 
-@router.delete("/{pet_id}", response_model=schemas.Pet)
-def delete_pet(pet_id: int, db: Session = Depends(get_db)):
-    '''Deleta um pet pelo seu ID.
+
+
+@router.delete("/{pet_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_pet(
+        pet: models.Pet = Depends(get_pet_or_404),
+        db: Session = Depends(get_db)):
+    '''Soft delete de um pet pelo seu ID.
 
     Args:
         pet_id (int): O ID do pet a ser deletado.
+
         db (Session): A sessão do banco de dados, injetada pelo FastAPI.
     '''
-    db_pet = db.query(models.Pet).filter(models.Pet.id == pet_id).first()
-    if not db_pet:
-        raise HTTPException(
-            status_code=404, detail="Pet não encontrado")
-    db.delete(db_pet)
+
+    pet.is_active = False
+    db.add(pet)
     db.commit()
-    return db_pet
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.patch("/{pet_id}", response_model=schemas.Pet)
-def update_pet(pet_id: int,
-               pet_update: schemas.PetUpdate, db: Session = Depends(get_db)):
+def update_pet(
+        pet_update: schemas.PetUpdate,
+        pet: models.Pet = Depends(get_pet_or_404),
+        db: Session = Depends(get_db)):
     '''Atualiza um pet existente.
 
     Args:
@@ -75,16 +111,12 @@ def update_pet(pet_id: int,
     Returns:
         models.Pet: O objeto do pet atualizado.
     '''
-    db_pet = db.query(models.Pet).filter(models.Pet.id == pet_id).first()
 
-    if not db_pet:
-        raise HTTPException(
-            status_code=404,
-            detail="Pet não encontrado"
-        )
 
     for key, value in pet_update.dict(exclude_unset=True).items():
-        setattr(db_pet, key, value)
+        setattr(pet, key, value)
 
+    db.add(pet)
     db.commit()
-    db.refresh(db_pet)
+    db.refresh(pet)
+    return pet
