@@ -1,10 +1,8 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, Response, status
 from sqlalchemy.orm import Session
 from app import models
 from app.core.database import get_db
 from app.schemas import inventory as schemas
-
-
 
 
 router = APIRouter(
@@ -19,15 +17,17 @@ def get_inventory_item_or_404(item_id: int, db: Session = Depends(get_db)):
     Lança HTTPException 404 se o item não for encontrado.
     Isso evita repetir a mesma lógica em várias rotas.
     """
-    db_item = db.query(models.Inventory).filter(models.Inventory.id == item_id).first()
+    db_item = db.query(models.Inventory).filter(
+        models.Inventory.id == item_id).filter(
+            models.Inventory.is_active == True).first()
+
     if not db_item:
         raise HTTPException(status_code=404,
                             detail=f"Item não encontrado com id {item_id}.")
     return db_item
-    
 
 
-@router.post("/", response_model=schemas.Inventory)
+@router.post("/", response_model=schemas.Inventory, status_code=status.HTTP_201_CREATED)
 def create_inventory_item(inventory_item: schemas.InventoryIn, db: Session = Depends(get_db)):
     """
     Cria um novo item no inventário.
@@ -61,10 +61,12 @@ def get_inventory_items(
     db: Session = Depends(get_db),
     skip: int = 0,
     limit: int = 100,
-    name: str | None = Query(None, description="Filtre por nome do produto(busca parcial)"),
-    low_stock: bool | None=Query(None, description="Filtre por itens com estoque baixo")
+    name: str | None = Query(
+        None, description="Filtre por nome do produto(busca parcial)"),
+    low_stock: bool | None = Query(
+        None, description="Filtre por itens com estoque baixo"),
+    include_inactive: bool = False
 ):
-
     """
     Retorna uma lista de itens do inventário com filtros e paginação.
     - Use `?low_stock=true` para filtrar por estoque baixo.
@@ -73,36 +75,43 @@ def get_inventory_items(
     """
     query = db.query(models.Inventory)
 
+    if not include_inactive:
+        query = query.filter(models.Inventory.is_active == True)
+
     if name:
         query = query.filter(models.Inventory.product_name.ilike(f"%{name}%"))
 
     if low_stock:
-        query = query.filter(models.Inventory.quantity <= models.Inventory.low_stock_threshold)
-    
+        query = query.filter(models.Inventory.quantity <=
+                             models.Inventory.low_stock_threshold)
+
     items = query.offset(skip).limit(limit).all()
-    
+
     return items
 
-    
 
-@router.delete("/{item_id}", response_model=schemas.Inventory)
-def delete_inventory_item(db_item: models.Inventory = Depends(get_inventory_item_or_404),
+@router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_inventory_item(item: models.Inventory = Depends(get_inventory_item_or_404),
                           db: Session = Depends(get_db)):
-    '''Deleta um item do inventário pelo seu ID.
+    '''Soft delete de um item do inventário pelo seu ID.
 
     Args:
         item_id (int): O ID do item a ser deletado.
+
         db (Session): A sessão do banco de dados, injetada pelo FastAPI.
     '''
 
-    db.delete(db_item)
+    item.is_active = False
+    db.add(item)
     db.commit()
-    return db_item  
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 
 @router.patch("/{item_id}", response_model=schemas.Inventory)
 def update_inventory_item(item_update: schemas.InventoryUpdate,
-                        db_item: models.Inventory = Depends(get_inventory_item_or_404),
-                        db: Session = Depends(get_db)):
+                          db_item: models.Inventory = Depends(
+                              get_inventory_item_or_404),
+                          db: Session = Depends(get_db)):
     '''Atualiza um item do inventário existente.
 
     Args:
@@ -115,18 +124,21 @@ def update_inventory_item(item_update: schemas.InventoryUpdate,
 
     Returns:
         models.Inventory: O objeto do item atualizado.
-    '''  
-    
-    
+    '''
+
     for key, value in item_update.dict(exclude_unset=True).items():
         setattr(db_item, key, value)
-    
+
+    db.add(db_item)
     db.commit()
     db.refresh(db_item)
     return db_item
 
+
 @router.get("/{item_id}", response_model=schemas.Inventory)
-def get_inventory_item_by_id(db_item: models.Inventory = Depends(get_inventory_item_or_404)):
+def get_inventory_item_by_id(
+        item: models.Inventory = Depends(get_inventory_item_or_404),
+        db: Session = Depends(get_db)):
     '''Retorna um item do inventário pelo seu ID.
 
     Args:
@@ -140,6 +152,4 @@ def get_inventory_item_by_id(db_item: models.Inventory = Depends(get_inventory_i
         schemas.Inventory: O objeto do item solicitado.
     '''
 
-    
-    return db_item
-
+    return item

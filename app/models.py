@@ -42,7 +42,6 @@ class Pet(Base):
     bookings = relationship("Booking", back_populates="pet", cascade="all, delete-orphan")
     vaccines = relationship("Vaccine", back_populates="pet", cascade="all, delete-orphan")
 
-
 class Employee(Base):
     '''Representa um funcionário do PetShop.'''
     __tablename__ = "employees"
@@ -91,6 +90,8 @@ class Inventory(Base):
     quantity = Column(Integer, nullable=False, default=0)
     price = Column(Float, nullable=False)
     low_stock_threshold = Column(Integer, nullable=False, default=5)
+
+    is_active = Column(Boolean, default=True, nullable=False)
 
     sale_items = relationship("Sale", back_populates="product")
 
